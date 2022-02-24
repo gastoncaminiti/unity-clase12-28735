@@ -26,12 +26,17 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private AudioClip shootSound;
 
     private AudioSource audioPlayer;
+    private Rigidbody rbPlayer;
+    //VARIABLES BOOLEANAS PARA CONTROLAR INPUTS
+    private bool isJump, isBack, isForward,isStatic;
+    public float speedLimit = 15f;
 
     void Start()
     {
         parentBullets = GameObject.Find("DinamycBullets");
         audioPlayer = GetComponent<AudioSource>();
-     
+        rbPlayer = GetComponent<Rigidbody>();
+
     }
     void Update()
     {
@@ -42,16 +47,42 @@ public class PlayerMovement : MonoBehaviour
 
     }
 
+    private void FixedUpdate()
+    {
+        float playerSpeed = rbPlayer.velocity.magnitude;
+        bool  isLimit = (playerSpeed > speedLimit);
+
+        if (isForward && !isLimit)
+        {
+            MoveRelativeForce(Vector3.forward);
+        }
+
+        if (isBack && !isLimit)
+        {
+            MoveRelativeForce(Vector3.back);
+        }
+
+        if(isJump){
+            rbPlayer.AddForce(Vector3.up * speedJump, ForceMode.Impulse);
+            isJump = false;
+        }
+   
+    }
+
     private void JumpPlayer()
     {
         if (Input.GetKeyDown(KeyCode.Space) && canJump)
         {
             audioPlayer.PlayOneShot(jumpSound, 0.5f);
-            transform.Translate(Vector3.up * speedJump);
+            //ACTIVO VARIABLE BOOLEAN AL DETECTAR INPUT.
+            isJump = true;
+            //transform.Translate(Vector3.up * speedJump);
+            //rbPlayer.AddForce(Vector3.up * speedJump, ForceMode.Impulse);
         }
     }
 
-    public void SetJumpStatus(bool status){
+    public void SetJumpStatus(bool status)
+    {
         canJump = status;
         playerAnimator.SetBool("isJump", !status);
     }
@@ -62,13 +93,13 @@ public class PlayerMovement : MonoBehaviour
         {
             canShoot = false;
             playerAnimator.SetBool("isShoot", !canShoot);
-            Invoke("DelayShoot",1f);
+            Invoke("DelayShoot", 1f);
         }
 
         if (!canShoot)
         {
             timePass += Time.deltaTime;
-        } 
+        }
 
         if (timePass > cooldown)
         {
@@ -89,23 +120,34 @@ public class PlayerMovement : MonoBehaviour
     {
         if (Input.GetKey(KeyCode.W))
         {
-            MovePlayer(Vector3.forward);
+            //MovePlayer(Vector3.forward);
             playerAnimator.SetBool("isRun", true);
+            isForward = true;
         }
         if (Input.GetKey(KeyCode.S))
         {
-            MovePlayer(Vector3.back);
+            //MovePlayer(Vector3.back);
             playerAnimator.SetBool("isRun", true);
+            isBack = true;
         }
 
-        if(Input.GetKeyUp(KeyCode.W) || Input.GetKeyUp(KeyCode.S)){
+        if (Input.GetKeyUp(KeyCode.W))
+        {
             playerAnimator.SetBool("isRun", false);
+            isForward = false;
+        }
+
+        if (Input.GetKeyUp(KeyCode.S))
+        {
+            playerAnimator.SetBool("isRun", false);
+            isBack = false;
         }
     }
 
-    private void MovePlayer(Vector3 directionEnemy)
+    private void MoveRelativeForce(Vector3 direction)
     {
-        transform.Translate(speed * Time.deltaTime * directionEnemy);
+        //transform.Translate(speed * Time.deltaTime * direction);
+        rbPlayer.AddRelativeForce(speed * direction, ForceMode.Acceleration);
     }
 
     private void RotatePlaye()
